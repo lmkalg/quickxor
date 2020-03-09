@@ -51,17 +51,21 @@ int main(int argc, char** argv){
       printf("Sorry! The current version does not support keys longer than 16 bytes.\n");
       exit(1);
     }
-
+    
     // Operation
     result_len = string_len;
     result_buffer = malloc(result_len);
-    quickxor(&string_buffer, &key_buffer, string_len, key_len, result_buffer);
+    int i = 0;
+    for(i=0; i < string_len; i++){
+        result_buffer[i] = key_buffer[i%key_len] ^ string_buffer[i];
+    }
 
-    //For result
+
+    // For result
     result_file = open_file(argv[3], "wb");
     fseek (result_file, 0, SEEK_SET);
     fwrite(result_buffer, 1, result_len, result_file);
     fclose(result_file);
-     
+
     return 0;
 }

@@ -1,0 +1,6 @@
+*.o
+tests/keys
+tests/files
+tests/binaries
+tests/result.txt
+tests/outputs
