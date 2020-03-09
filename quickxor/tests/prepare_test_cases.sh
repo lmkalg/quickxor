@@ -37,7 +37,7 @@ gcc $QUICKXOR_DIR/quickxor.o $QUICKXOR_DIR/quickxor.c -o $BINARIES/quickxor
 echo "[+] Done!"
 
 echo "[*] Compiling xor_in_c"
-gcc $XOR_IN_C_DIR/xor_in_c.c -o $BINARIES/xor_in_c
+gcc -O2 $XOR_IN_C_DIR/xor_in_c.c -o $BINARIES/xor_in_c
 echo "[+] Done!"
 
 echo "[+] Everything is ready!"
