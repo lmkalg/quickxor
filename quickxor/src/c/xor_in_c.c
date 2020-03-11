@@ -66,6 +66,10 @@ int main(int argc, char** argv){
     fseek (result_file, 0, SEEK_SET);
     fwrite(result_buffer, 1, result_len, result_file);
     fclose(result_file);
-
+    
+    free(string_buffer);
+    free(key_buffer);
+    free(result_buffer);
+    
     return 0;
 }
