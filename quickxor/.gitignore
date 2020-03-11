@@ -4,3 +4,5 @@ tests/files
 tests/binaries
 tests/result.txt
 tests/outputs
+tests/graphics
+tests/.vscode
