@@ -17,3 +17,4 @@ do
 done
 echo "All tests were successfully"
 rm valgrind.output
+rm expected_asm
