@@ -22,7 +22,7 @@ do
 done
 echo "[+] Done!"
 
-echo "[*] Creating random files (this make take a few seconds)"
+echo "[*] Creating random files (this may take a few seconds)"
 i=128
 for j in `seq 1 5`;
 do
@@ -32,12 +32,14 @@ done
 echo "[+] Done!"
 
 echo "[*] Compiling quickxor"
-make -C $QUICKXOR_DIR
+make -C $QUICKXOR_DIR > /dev/null
 echo "[+] Done!"
+cp $QUICKXOR_DIR/quickxor $BINARIES
 
 echo "[*] Compiling xor_in_c"
-make -C $XOR_IN_C_DIR
+make -C $XOR_IN_C_DIR > /dev/null
 echo "[+] Done!"
+cp $XOR_IN_C_DIR/xor_in_c $BINARIES
 
 echo "[+] Everything is ready!"
 
