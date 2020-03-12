@@ -1,4 +1,6 @@
 *.o
+src/asm/quickxor
+src/c/xor_in_c
 tests/keys
 tests/files
 tests/binaries
