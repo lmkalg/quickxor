@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-QUICKXOR_DIR=../src/asm
-XOR_IN_C_DIR=../src/c
+QUICKXOR_DIR=../../src/asm
+XOR_IN_C_DIR=../../src/c
 KEYS=keys
 FILES=files
 BINARIES=binaries
@@ -22,7 +22,7 @@ do
 done
 echo "[+] Done!"
 
-echo "[*] Creating random files"
+echo "[*] Creating random files (this make take a few seconds)"
 i=128
 for j in `seq 1 5`;
 do
