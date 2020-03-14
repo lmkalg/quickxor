@@ -1,7 +1,12 @@
+QUICKXOR_DIR=../../src
+
+# Compiling quickxor
+make -C $QUICKXOR_DIR
+
 for dir in `ls -d test*`
 do
     echo -n "Mem checking against $dir..." 
-    valgrind --log-file=valgrind.output ../../src/asm/quickxor $dir/file $dir/key expected_asm
+    valgrind --log-file=valgrind.output $QUICKXOR_DIR/quickxor $dir/file $dir/key expected_asm
     
     leaks=`grep -ic 'no leaks are possible' valgrind.output`
     invalid_read=`grep -ic 'invalid read' valgrind.output` 
