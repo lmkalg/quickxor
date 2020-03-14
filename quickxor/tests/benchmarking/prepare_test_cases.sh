@@ -1,12 +1,40 @@
 #!/bin/bash
 set -e
 
-QUICKXOR_DIR=../../src/asm
-XOR_IN_C_DIR=../../src/c
+
+if [ -z "$1" ]
+then
+    echo "Misssing Argument. Type -h for help"
+    exit 1
+else
+    if [ $1 == "-h" ]
+    then
+        echo "Use positional argument to set the name of the tool you want to use for comparision."
+        echo "The executable of this tool should be placed in: other_tools_to_compare/name_of_tool/name_of_tool"
+        echo "Being 'name_of_tool' the argument provided."
+        echo "Example: $0 xor_in_c"
+        echo "Also, this tool should receive the parameters in the following order: ./tool_name path_to_file path_to_key path_to_output"
+        echo "More details in README.md"
+        exit 0
+    fi
+fi
+
+QUICKXOR_DIR=../../src/
+OTHER_TOOL_NAME=$1
+OTHER_TOOL=../other_tools_to_compare/$OTHER_TOOL_NAME/$OTHER_TOOL_NAME
 KEYS=keys
 FILES=files
 BINARIES=binaries
 OUTPUTS=outputs
+
+if [ ! -f "$OTHER_TOOL" ]; then
+    echo "The binary $OTHER_TOOL does not exists" 
+    exit 1
+fi
+
+
+
+
 
 echo "[*] Creating dirs.."
 mkdir -p $KEYS
@@ -36,10 +64,9 @@ make -C $QUICKXOR_DIR > /dev/null
 echo "[+] Done!"
 cp $QUICKXOR_DIR/quickxor $BINARIES
 
-echo "[*] Compiling xor_in_c"
-make -C $XOR_IN_C_DIR > /dev/null
+echo "[*] Copiting $OTHER_TOOL_NAME to binaries"
+cp $OTHER_TOOL binaries
 echo "[+] Done!"
-cp $XOR_IN_C_DIR/xor_in_c $BINARIES
 
 echo "[+] Everything is ready!"
 
