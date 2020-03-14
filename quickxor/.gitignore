@@ -1,6 +1,5 @@
 *.o
-src/asm/quickxor
-src/c/xor_in_c
+src/quickxor
 tests/benchmarking/keys
 tests/benchmarking/files
 tests/benchmarking/binaries
