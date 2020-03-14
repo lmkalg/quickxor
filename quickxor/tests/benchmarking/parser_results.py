@@ -7,11 +7,13 @@ from functools import reduce
 from collections import namedtuple
 
 Data = namedtuple("Data","user system elapsed cpu")
-
+CPU = "cpu"
+ELAPSED = "elapsed"
 END_PLACEHOLDER="##FINISH"
 QUICKXOR="quickxor"
-XOR_IN_C="xor_in_c"
 GRAPHICS="graphics"
+KEY = "key"
+FILE = "file"
 
 class DataParserAndPlotter:
     
@@ -20,18 +22,27 @@ class DataParserAndPlotter:
         self._regex_metadata_info = re.compile(r"using\s+([^\s+]+)\s+and\s+([^\s+]+)\s+with\s+([^\s+]+)",re.IGNORECASE)
         self._regex_data_info = re.compile(r"user:\s+(\d+.\d+)\s+system:\s+(\d+.\d+)\s+elapsed:\s+\d:(\d+.\d+)\s+cpu:\s+(\d+)%",re.IGNORECASE)
         self._data = {}
-        self._data[QUICKXOR] = {}
-        self._data[XOR_IN_C] = {}
     
+    def _get_names_of_tools(self, line):
+        """
+           Gets the name of tools: "Tools being compared: X  Y "
+        """     
+        tools = line.split(":")[1].strip().split(" ")
+        self._data[tools[0]] = {}
+        self._data[tools[1]] = {}
+
+
     def parse(self, filepath):
         """
             Parse the data of the result file 
         """
         with  open(filepath,'r') as f:
             self.content = f.readlines()
-
-        self.number_of_tests = self._parse_number_of_tests(self.content[0])
-        i=1
+        i = 0
+        self._get_names_of_tools(self.content[i])
+        i+=1
+        self.number_of_tests = self._parse_number_of_tests(self.content[i])
+        i+=1
         while self.content[i].strip() != END_PLACEHOLDER:
             filename, key_name, binary = self._parse_metadata_info_from_line(self.content[i])
             if not self._data[binary].get(filename):
@@ -82,6 +93,56 @@ class DataParserAndPlotter:
         """
         return "key_{}".format(size)
 
+    def _get_test_data_by_argument(self, tool, arg, arg_size, fixed_value):
+        """
+            Return corresponding tested data based on the argument type provided
+        """
+        if arg == FILE:
+            return self._data[tool][self._file_size_to_filename(arg_size)][fixed_value]
+        elif arg == KEY:
+            return self._data[tool][fixed_value][self._key_size_to_filename(arg_size)]
+
+    def _get_argument_size_list_by_argument(self, arg):
+        """
+            Return corresponding size list based on the argument type provided
+        """
+        any_tool = list(self._data.keys())[0]
+        if arg == FILE:
+            return [self._filename_to_size(elem) for elem in list(self._data[any_tool].keys())]
+        elif arg == KEY:
+            any_file = list(self._data[any_tool].keys())[0]
+            return [self._filename_to_size(elem) for elem in list(self._data[any_tool][any_file].keys())]
+
+
+    def _plot_metric_by_argument(self, metric, argument, fixed_value):
+        """
+            Refactor
+        """
+        argument_size_list = self._get_argument_size_list_by_argument(argument)
+        argument_size_list.sort()
+
+        #Get the average elapsed time for each tests for each binary.
+        average_metric_per_arg_by_tool = {}
+        for tool in self._data.keys():
+            average_metric_per_arg_by_tool.update({tool:[]})
+
+            for argument_size in argument_size_list:
+                all_tests_data_for_file_and_key = self._get_test_data_by_argument(tool, argument, argument_size, fixed_value)
+                sum_elapsed = sum([getattr(elem, metric) for elem in all_tests_data_for_file_and_key])
+                average_metric_per_arg_by_tool[tool].append(sum_elapsed/self.number_of_tests)
+
+            plt.plot(argument_size_list, average_metric_per_arg_by_tool[tool], label=tool)
+
+        secondary_argument = KEY if argument_size == FILE else FILE
+        measure = "Mbytes" if argument == FILE else "Bytes"
+
+        plt.legend(loc="upper left")
+        plt.title("{} time while increasing size of {} (fixed {} size {} )".format(metric, argument, secondary_argument, self._filename_to_size(fixed_value)))
+        plt.ylabel("{} Time (in secs)".format(metric))
+        plt.xlabel("{} size (in {})".format(argument, measure))
+        plt.savefig('{}/{}_time_by_{}.png'.format(self.graphics_path, metric, argument))
+        plt.close()
+
     def plot_all(self):
         """
             Function to call all other plots
@@ -90,138 +151,44 @@ class DataParserAndPlotter:
         self.graphics_path = os.path.join(dir_path,GRAPHICS)
         if not os.path.exists(self.graphics_path):
             os.makedirs(self.graphics_path)
+        
         self._plot_elapsed_by_file()
         self._plot_elapsed_by_key()
         self._plot_cpu_by_key()
         self._plot_cpu_by_file()
 
+
+
     def _plot_elapsed_by_file(self):
         """
-            This plot will show the elapsed time for the quickxor and the xor_in_c with while the
+            This plot will show the elapsed time for the quickxor and the other_tool with while the
             file size increased (fixed key size)
         """
-        fixed_key = "key_2"
-        file_size_list = [self._filename_to_size(elem) for elem in list(self._data[QUICKXOR].keys())]
-        file_size_list.sort()
-
-        #Get the average elapsed time for each tests for each binary.
-        average_elapsed_time_per_file_for_quickxor = []
-        for file_size in file_size_list:
-            all_tests_data_for_file_and_key = self._data[QUICKXOR][self._file_size_to_filename(file_size)][fixed_key]
-            sum_elapsed = sum([elem.elapsed for elem in all_tests_data_for_file_and_key])
-            average_elapsed_time_per_file_for_quickxor.append(sum_elapsed/self.number_of_tests)
-
-        average_elapsed_time_per_file_for_xor_in_c = []
-        for file_size in file_size_list:
-            all_tests_data_for_file_and_key = self._data[XOR_IN_C][self._file_size_to_filename(file_size)][fixed_key]
-            sum_elapsed = sum([elem.elapsed for elem in all_tests_data_for_file_and_key])
-            average_elapsed_time_per_file_for_xor_in_c.append(sum_elapsed/self.number_of_tests)
-
-
-
-        plt.plot(file_size_list, average_elapsed_time_per_file_for_quickxor, label='Quickxor')
-        plt.plot(file_size_list, average_elapsed_time_per_file_for_xor_in_c, label='Xor in C')
-        plt.legend(loc="upper left")
-        plt.title("Elapsed time while increasing size of file (fixed key length {} )".format(self._filename_to_size(fixed_key)))
-        plt.ylabel("Elapsed Time (in secs)")
-        plt.xlabel("File size (in MB)")
-        plt.savefig('{}/elapsed_time_by_file.png'.format(self.graphics_path))
-        plt.close()
+        self._plot_metric_by_argument(ELAPSED, FILE, "key_2")
+        
 
     def _plot_cpu_by_file(self):
         """
-            This plot will show the CPU usage time for the quickxor and the xor_in_c  while the
+            This plot will show the CPU usage time for the quickxor and the other_tool  while the
             file size increased (fixed key size)
         """
-        fixed_key = "key_2"
-        file_size_list = [self._filename_to_size(elem) for elem in list(self._data[QUICKXOR].keys())]
-        file_size_list.sort()
+        self._plot_metric_by_argument(CPU, FILE, "key_2")
 
-        #Get the average cpu time for each tests for each binary.
-        average_cpu_time_per_file_for_quickxor = []
-        for file_size in file_size_list:
-            all_tests_data_for_file_and_key = self._data[QUICKXOR][self._file_size_to_filename(file_size)][fixed_key]
-            sum_cpu = sum([elem.cpu for elem in all_tests_data_for_file_and_key])
-            average_cpu_time_per_file_for_quickxor.append(sum_cpu/self.number_of_tests)
-
-        average_cpu_time_per_file_for_xor_in_c = []
-        for file_size in file_size_list:
-            all_tests_data_for_file_and_key = self._data[XOR_IN_C][self._file_size_to_filename(file_size)][fixed_key]
-            sum_cpu = sum([elem.cpu for elem in all_tests_data_for_file_and_key])
-            average_cpu_time_per_file_for_xor_in_c.append(sum_cpu/self.number_of_tests)
-
-
-
-        plt.plot(file_size_list, average_cpu_time_per_file_for_quickxor, label='Quickxor')
-        plt.plot(file_size_list, average_cpu_time_per_file_for_xor_in_c, label='Xor in C')
-        plt.legend(loc="upper left")
-        plt.title("CPU time while increasing size of file (fixed key length {} )".format(self._filename_to_size(fixed_key)))
-        plt.ylabel("CPU Time (in secs)")
-        plt.xlabel("File size (in MB)")
-        plt.savefig('{}/cpu_time_by_file.png'.format(self.graphics_path))
-        plt.close()
 
     def _plot_cpu_by_key(self):
         """
-            This plot will show the CPU usage time for the quickxor and the xor_in_c  while the
+            This plot will show the CPU usage time for the quickxor and the other_tool  while the
             key size increased (fixed file size)
         """
-        fixed_file = "file_1024"
-        key_size_list = [self._filename_to_size(elem) for elem in list(self._data[QUICKXOR][fixed_file].keys())]
-        key_size_list.sort()
-
-        #Get the average cpu time for each tests for each binary.
-        average_cpu_time_per_key_for_quickxor = []
-        for key_size in key_size_list:
-            all_tests_data_for_file_and_key = self._data[QUICKXOR][fixed_file][self._key_size_to_filename(key_size)]
-            sum_cpu = sum([elem.cpu for elem in all_tests_data_for_file_and_key])
-            average_cpu_time_per_key_for_quickxor.append(sum_cpu/self.number_of_tests)
-        
-        average_cpu_time_per_key_for_xor_in_c = []
-        for key_size in key_size_list:
-            all_tests_data_for_file_and_key = self._data[XOR_IN_C][fixed_file][self._key_size_to_filename(key_size)]
-            sum_cpu = sum([elem.cpu for elem in all_tests_data_for_file_and_key])
-            average_cpu_time_per_key_for_xor_in_c.append(sum_cpu/self.number_of_tests)
-
-        plt.plot(key_size_list, average_cpu_time_per_key_for_quickxor, label='Quickxor')
-        plt.plot(key_size_list, average_cpu_time_per_key_for_xor_in_c, label='Xor in C')
-        plt.legend(loc="upper left")
-        plt.title("CPU time while increasing size of key (fixed file size {})".format(self._filename_to_size(fixed_file)))
-        plt.ylabel("CPU Time (in secs)")
-        plt.xlabel("Key size (in bytes)")
-        plt.savefig('{}/cpu_time_by_key.png'.format(self.graphics_path))
-        plt.close()
+        self._plot_metric_by_argument(CPU, KEY, "file_1024")
 
     def _plot_elapsed_by_key(self):
         """
-            This plot will show the elapsed time for the quickxor and the xor_in_c  while the
+            This plot will show the elapsed time for the quickxor and the other_tool  while the
             key size increased (fixed file size)
         """
-        fixed_file = "file_1024"
-        key_size_list = [self._filename_to_size(elem) for elem in list(self._data[QUICKXOR][fixed_file].keys())]
-        key_size_list.sort()
-
-        #Get the average elapsed time for each tests for each binary.
-        average_elapsed_time_per_key_for_quickxor = []
-        for key_size in key_size_list:
-            all_tests_data_for_file_and_key = self._data[QUICKXOR][fixed_file][self._key_size_to_filename(key_size)]
-            sum_elapsed = sum([elem.elapsed for elem in all_tests_data_for_file_and_key])
-            average_elapsed_time_per_key_for_quickxor.append(sum_elapsed/self.number_of_tests)
-        
-        average_elapsed_time_per_key_for_xor_in_c = []
-        for key_size in key_size_list:
-            all_tests_data_for_file_and_key = self._data[XOR_IN_C][fixed_file][self._key_size_to_filename(key_size)]
-            sum_elapsed = sum([elem.elapsed for elem in all_tests_data_for_file_and_key])
-            average_elapsed_time_per_key_for_xor_in_c.append(sum_elapsed/self.number_of_tests)
-
-        plt.plot(key_size_list, average_elapsed_time_per_key_for_quickxor, label='Quickxor')
-        plt.plot(key_size_list, average_elapsed_time_per_key_for_xor_in_c, label='Xor in C')
-        plt.legend(loc="upper left")
-        plt.title("Elapsed time while increasing size of key (fixed file size {})".format(self._filename_to_size(fixed_file)))
-        plt.ylabel("Elapsed Time (in secs)")
-        plt.xlabel("Key size (in bytes)")
-        plt.savefig('{}/elapsed_time_by_key.png'.format(self.graphics_path))
-        plt.close()
+        self._plot_metric_by_argument(ELAPSED, KEY, "file_1024")
+     
 
 if __name__ == "__main__":
     parser = ArgumentParser()
