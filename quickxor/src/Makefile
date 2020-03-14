@@ -10,6 +10,10 @@ all: quickxor.o
 quickxor.o: quickxor.asm
 	$(NASM) $(NFLAGS) quickxor.asm 
 
+
+install: all 
+	mv $(PROGRAM_NAME) /usr/local/bin/
+
 clean:
 	rm quickxor.o $(PROGRAM_NAME)
 
