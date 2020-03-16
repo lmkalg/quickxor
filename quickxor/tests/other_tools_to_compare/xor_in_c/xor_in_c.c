@@ -28,8 +28,6 @@ char* read_file_and_return_buffer(FILE* _file, long _file_len ){
 
 
 int main(int argc, char** argv){
-    extern void quickxor();
-
     FILE* string_file, *key_file, *result_file;
     long string_len, key_len, result_len;
     char* string_buffer, *key_buffer, *result_buffer;

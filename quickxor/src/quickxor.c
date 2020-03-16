@@ -27,8 +27,17 @@ char* read_file_and_return_buffer(FILE* _file, long _file_len ){
 }
 
 
+void print_help(){
+    printf("Usage: ./quickxor <path_to_file> <path_to_key> <path_to_output>\n");
+}
+
 int main(int argc, char** argv){
     extern void quickxor();
+
+    if (argv[1] == "-h" || argv[1] == "--help" || argv[1] == NULL || argv[2] == NULL || argv[3] == NULL){
+        print_help();
+        exit(0);
+    }
 
     FILE* string_file, *key_file, *result_file;
     long string_len, key_len, result_len;
