@@ -134,12 +134,13 @@ class DataParserAndPlotter:
             plt.plot(argument_size_list, average_metric_per_arg_by_tool[tool], label=tool)
 
         secondary_argument = KEY if argument_size == FILE else FILE
-        measure = "Mbytes" if argument == FILE else "Bytes"
+        arg_measure = "Mbytes" if argument == FILE else "Bytes"
+        metric_measure = "Secs" if arg_measure == ELAPSED else "Percentaje"
 
         plt.legend(loc="upper left")
         plt.title("{} time while increasing size of {} (fixed {} size {} )".format(metric, argument, secondary_argument, self._filename_to_size(fixed_value)))
-        plt.ylabel("{} Time (in secs)".format(metric))
-        plt.xlabel("{} size (in {})".format(argument, measure))
+        plt.ylabel("{} Time ({})".format(metric, metric_measure))
+        plt.xlabel("{} size ({})".format(argument, arg_measure))
         plt.savefig('{}/{}_time_by_{}.png'.format(self.graphics_path, metric, argument))
         plt.close()
 
